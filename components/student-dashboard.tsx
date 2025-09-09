@@ -1,21 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useState, useEffect, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
-import { PermissionSlipForm } from "@/components/permission-slip-form"
 import { PDFDownloadButton } from "@/components/pdf-download-button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { PermissionSlipSkeleton } from "@/components/permission-slip-skeleton"
+import { PermissionSlipForm } from "./permission-slip-form"
 
 interface Profile {
   id: string
   email: string
   full_name: string
   role: string
-  student_id: string
+  student_id?: string
+  department?: string
+  created_at: string
 }
 
 interface PermissionSlip {
@@ -24,9 +26,12 @@ interface PermissionSlip {
   description: string
   event_date: string
   event_location: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
   status: "pending" | "approved" | "rejected"
   faculty_comments?: string
   created_at: string
+  student_id: string
 }
 
 interface StudentDashboardProps {
@@ -37,24 +42,31 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
   const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     fetchPermissionSlips()
   }, [])
 
   const fetchPermissionSlips = async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from("permission_slips")
-      .select("*")
-      .eq("student_id", profile.id)
-      .order("created_at", { ascending: false })
-
-    if (!error && data) {
-      setPermissionSlips(data)
-    }
-    setIsLoading(false)
+    // try {
+    //   setError(null)
+    //   const result = await getPermissionSlips()
+    //   if (result.success && result.data) {
+    //     setPermissionSlips(result.data)
+    //   } else {
+    //     setError(result.error || "Failed to fetch permission slips")
+    //     console.error("Error fetching permission slips:", result.error)
+    //   }
+    // } catch (error) {
+    //   setError("An unexpected error occurred")
+    //   console.error("Error fetching permission slips:", error)
+    // } finally {
+    //   setIsLoading(false)
+    // }
   }
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -84,7 +96,9 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
 
   const handleFormSuccess = () => {
     setShowForm(false)
-    fetchPermissionSlips()
+    startTransition(() => {
+      fetchPermissionSlips()
+    })
   }
 
   return (
@@ -93,23 +107,32 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
         <div>
           <h1 className="text-3xl font-bold">Student Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {profile.full_name} (ID: {profile.student_id})
+            Welcome back, {profile.full_name} {profile.student_id && `(ID: ${profile.student_id})`}
           </p>
         </div>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => fetchPermissionSlips()} 
+            variant="outline" 
+            disabled={isLoading || isPending}
+          >
+            {isLoading || isPending ? "Loading..." : "Refresh"}
+          </Button>
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogTrigger asChild>
+              <Button disabled={isPending}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Request
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Submit Permission Slip Request</DialogTitle>
+              <DialogTitle>Permission Slip Request</DialogTitle>
             </DialogHeader>
             <PermissionSlipForm onSuccess={handleFormSuccess} />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3 mb-8">
@@ -147,13 +170,18 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Your Permission Slip Requests</CardTitle>
-          <CardDescription>Track the status of your submitted requests</CardDescription>
-        </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <PermissionSlipSkeleton variant="student" showStats={false} />
+          ) : error ? (
+            <div className="text-center py-8">
+              <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Requests</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => fetchPermissionSlips()} variant="outline">
+                Try Again
+              </Button>
+            </div>
           ) : permissionSlips.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -185,7 +213,7 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
                           ...slip,
                           student: {
                             full_name: profile.full_name,
-                            student_id: profile.student_id,
+                            student_id: profile.student_id || "",
                             email: profile.email,
                           },
                         }}
@@ -194,12 +222,9 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium">Event Date:</span> {new Date(slip.event_date).toLocaleDateString()}
+                      <span className="font-medium">Contact Phone:</span> {slip.emergency_contact_phone}
                     </div>
-                    <div>
-                      <span className="font-medium">Location:</span> {slip.event_location}
-                    </div>
-                    <div>
+                    <div className="col-span-2">
                       <span className="font-medium">Submitted:</span> {new Date(slip.created_at).toLocaleDateString()}
                     </div>
                   </div>

@@ -29,7 +29,7 @@ export function generatePermissionSlipPDF(data: PermissionSlipData): void {
   // University Header
   doc.setFontSize(20)
   doc.setFont("helvetica", "bold")
-  doc.text("UNIVERSITY PERMISSION SLIP", 105, 25, { align: "center" })
+  doc.text("NUB PERMISSION SLIP", 105, 25, { align: "center" })
 
   doc.setFontSize(12)
   doc.setFont("helvetica", "normal")
@@ -137,7 +137,7 @@ export function generatePermissionSlipPDF(data: PermissionSlipData): void {
   // Footer
   doc.setFontSize(8)
   doc.setFont("helvetica", "italic")
-  doc.text("This is an official university document. Please retain for your records.", 105, 280, { align: "center" })
+  doc.text("This is an official NUB document. Please retain for your records.", 105, 280, { align: "center" })
   doc.text(`Submitted: ${new Date(data.created_at).toLocaleDateString()}`, 105, 288, { align: "center" })
 
   // Download the PDF

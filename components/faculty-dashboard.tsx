@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { FileText, Clock, CheckCircle, XCircle, Eye, Search, Filter, Calendar, MapPin, Phone, User } from "lucide-react"
 import { PDFDownloadButton, BulkPDFButton } from "@/components/pdf-download-button"
+import { PermissionSlipSkeleton } from "@/components/permission-slip-skeleton"
 
 interface Profile {
   id: string
@@ -47,7 +48,104 @@ interface FacultyDashboardProps {
 }
 
 export function FacultyDashboard({ profile }: FacultyDashboardProps) {
-  const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>([])
+  const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>(
+   [
+  {
+    "id": "ps-001",
+    "title": "Field Trip to History Museum",
+    "description": "An educational visit to the local history museum as part of the Ancient Civilizations course.",
+    "event_date": "2024-11-10T09:00:00Z",
+    "event_location": "City History Museum",
+    "emergency_contact_name": "Sarah Connor",
+    "emergency_contact_phone": "555-123-4567",
+    "status": "pending",
+    "created_at": "2024-10-25T14:00:00Z",
+    "student_id": "STU001",
+    "profiles": {
+      "full_name": "Alice Smith",
+      "student_id": "STU001",
+      "email": "alice.smith@example.com"
+    }
+  },
+  {
+    "id": "ps-002",
+    "title": "Robotics Club Competition",
+    "description": "Participation in the regional robotics competition at the university campus.",
+    "event_date": "2024-12-05T08:30:00Z",
+    "event_location": "University Engineering Hall",
+    "emergency_contact_name": "John Doe",
+    "emergency_contact_phone": "555-987-6543",
+    "status": "approved",
+    "faculty_comments": "Excited to see what they build!",
+    "faculty_reviewer_id": "FAC003",
+    "reviewed_at": "2024-10-28T10:15:00Z",
+    "created_at": "2024-10-26T11:30:00Z",
+    "student_id": "STU002",
+    "profiles": {
+      "full_name": "Bob Johnson",
+      "student_id": "STU002",
+      "email": "bob.johnson@example.com"
+    }
+  },
+  {
+    "id": "ps-003",
+    "title": "Outdoor Photography Workshop",
+    "description": "An all-day outdoor photography workshop in the national park.",
+    "event_date": "2025-01-15T07:00:00Z",
+    "event_location": "Pine Ridge National Park",
+    "emergency_contact_name": "Jane Brown",
+    "emergency_contact_phone": "555-111-2222",
+    "status": "rejected",
+    "faculty_comments": "Workshop overlaps with mandatory class. Please reschedule.",
+    "faculty_reviewer_id": "FAC001",
+    "reviewed_at": "2024-11-01T16:00:00Z",
+    "created_at": "2024-10-27T09:00:00Z",
+    "student_id": "STU003",
+    "profiles": {
+      "full_name": "Charlie Brown",
+      "student_id": "STU003",
+      "email": "charlie.brown@example.com"
+    }
+  },
+  {
+    "id": "ps-004",
+    "title": "Debate Team Tournament",
+    "description": "Travel to an inter-university debate tournament in a neighboring state.",
+    "event_date": "2024-11-20T06:00:00Z",
+    "event_location": "State University Campus",
+    "emergency_contact_name": "Clark Kent",
+    "emergency_contact_phone": "555-333-4444",
+    "status": "pending",
+    "created_at": "2024-10-29T10:45:00Z",
+    "student_id": "STU004",
+    "profiles": {
+      "full_name": "Diana Prince",
+      "student_id": "STU004",
+      "email": "diana.prince@example.com"
+    }
+  },
+  {
+    "id": "ps-005",
+    "title": "Volunteer Day at Animal Shelter",
+    "description": "Volunteering at the local animal shelter as part of a community service initiative.",
+    "event_date": "2024-11-12T13:00:00Z",
+    "event_location": "Happy Tails Animal Shelter",
+    "emergency_contact_name": "Bruce Wayne",
+    "emergency_contact_phone": "555-555-6666",
+    "status": "approved",
+    "faculty_comments": "Great initiative! Ensure all safety protocols are followed.",
+    "faculty_reviewer_id": "FAC002",
+    "reviewed_at": "2024-10-31T09:00:00Z",
+    "created_at": "2024-10-30T15:10:00Z",
+    "student_id": "STU005",
+    "profiles": {
+      "full_name": "Eve Adams",
+      "student_id": "STU005",
+      "email": "eve.adams@example.com"
+    }
+  }
+]
+  )
   const [filteredSlips, setFilteredSlips] = useState<PermissionSlip[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -228,7 +326,7 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
           <div className="flex gap-4">
             <div className="flex-1">
               <Label htmlFor="search">Search</Label>
-              <div className="relative">
+              <div className="relative my-2">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
@@ -240,7 +338,7 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
               </div>
             </div>
             <div className="w-48">
-              <Label htmlFor="status">Status Filter</Label>
+              <Label htmlFor="status" className="mb-2">Status Filter</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue />
@@ -263,7 +361,6 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Permission Slip Requests</CardTitle>
-              <CardDescription>Review and manage student permission slip requests</CardDescription>
             </div>
             {filteredSlips.length > 0 && (
               <BulkPDFButton
@@ -285,7 +382,7 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <PermissionSlipSkeleton variant="faculty" showStats={false} count={5} />
           ) : filteredSlips.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -319,10 +416,6 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {new Date(slip.event_date).toLocaleDateString()}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {slip.event_location}
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">{slip.description}</p>
@@ -361,13 +454,13 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
                             <DialogTitle>Review Permission Slip Request</DialogTitle>
                           </DialogHeader>
                           {selectedSlip && (
-                            <div className="space-y-6">
-                              <div className="grid gap-4">
+                            <div className="space-y-8">
+                              <div className="grid gap-6 md:grid-cols-2">
                                 <div>
-                                  <h3 className="font-semibold mb-2">Event Details</h3>
+                                  <h3 className="font-semibold mb-2">Reason of exception</h3>
                                   <div className="grid gap-2 text-sm">
                                     <div>
-                                      <strong>Title:</strong> {selectedSlip.title}
+                                       {selectedSlip.title}
                                     </div>
                                     <div>
                                       <strong>Description:</strong> {selectedSlip.description}
@@ -375,9 +468,7 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
                                     <div>
                                       <strong>Date:</strong> {new Date(selectedSlip.event_date).toLocaleDateString()}
                                     </div>
-                                    <div>
-                                      <strong>Location:</strong> {selectedSlip.event_location}
-                                    </div>
+
                                   </div>
                                 </div>
 
@@ -399,9 +490,6 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
                                 <div>
                                   <h3 className="font-semibold mb-2">Emergency Contact</h3>
                                   <div className="grid gap-2 text-sm">
-                                    <div>
-                                      <strong>Name:</strong> {selectedSlip.emergency_contact_name}
-                                    </div>
                                     <div className="flex items-center gap-1">
                                       <Phone className="h-4 w-4" />
                                       <strong>Phone:</strong> {selectedSlip.emergency_contact_phone}
@@ -411,24 +499,13 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
                               </div>
 
                               <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="comments">Review Comments</Label>
-                                  <Textarea
-                                    id="comments"
-                                    placeholder="Add comments about your decision..."
-                                    value={reviewComments}
-                                    onChange={(e) => setReviewComments(e.target.value)}
-                                  />
-                                </div>
-
                                 {selectedSlip.status === "pending" && (
                                   <div className="flex gap-4">
                                     <Button
                                       onClick={() => handleReview(selectedSlip.id, "approved")}
                                       disabled={isReviewing}
-                                      className="flex-1 bg-green-600 hover:bg-green-700"
+                                      className="flex-1"
                                     >
-                                      <CheckCircle className="h-4 w-4 mr-2" />
                                       Approve
                                     </Button>
                                     <Button
@@ -468,12 +545,6 @@ export function FacultyDashboard({ profile }: FacultyDashboardProps) {
                       </Dialog>
                     </div>
                   </div>
-
-                  {slip.faculty_comments && (
-                    <div className="mt-3 p-3 bg-muted rounded text-sm">
-                      <strong>Faculty Comments:</strong> {slip.faculty_comments}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

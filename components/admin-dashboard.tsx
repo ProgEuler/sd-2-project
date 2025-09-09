@@ -1,103 +1,138 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Users, FileText, Clock, Eye, Edit, Trash2, Download, Search, TrendingUp } from "lucide-react"
-import { BulkPDFButton } from "@/components/pdf-download-button"
+import { useState, useEffect, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Users,
+  FileText,
+  Clock,
+  Eye,
+  Edit,
+  Trash2,
+  Download,
+  Search,
+  TrendingUp,
+} from "lucide-react";
+import { AdminDashboardSkeleton } from "./permission-slip-skeleton";
 
 interface Profile {
-  id: string
-  email: string
-  full_name: string
-  role: string
-  department?: string
-  student_id?: string
-  created_at: string
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  department?: string;
+  student_id?: string;
+  created_at: string;
 }
 
 interface PermissionSlip {
-  id: string
-  title: string
-  description: string
-  event_date: string
-  event_location: string
-  status: "pending" | "approved" | "rejected"
-  faculty_comments?: string
-  created_at: string
-  profiles?: {
-    full_name: string
-    student_id: string
-    email: string
-  }
+  _id: string;
+  title: string;
+  description: string;
+  event_date: string;
+  event_location: string;
+  status: "pending" | "approved" | "rejected";
+  faculty_comments?: string;
+  created_at: string;
+  student_profile?: {
+    full_name: string;
+    student_id: string;
+    email: string;
+  };
 }
 
 interface AdminDashboardProps {
-  profile: Profile
+  profile: Profile;
 }
 
-export function AdminDashboard({ profile }: AdminDashboardProps) {
-  const [users, setUsers] = useState<Profile[]>([])
-  const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<Profile[]>([])
-  const [filteredSlips, setFilteredSlips] = useState<PermissionSlip[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [userSearchTerm, setUserSearchTerm] = useState("")
-  const [slipSearchTerm, setSlipSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
-  const [isEditingUser, setIsEditingUser] = useState(false)
+export function AdminDashboardMongo({ profile }: AdminDashboardProps) {
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<Profile[]>([]);
+  const [filteredSlips, setFilteredSlips] = useState<PermissionSlip[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [slipSearchTerm, setSlipSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   useEffect(() => {
-    filterUsers()
-  }, [users, userSearchTerm, roleFilter])
+    filterUsers();
+  }, [users, userSearchTerm, roleFilter]);
 
   useEffect(() => {
-    filterSlips()
-  }, [permissionSlips, slipSearchTerm, statusFilter])
+    filterSlips();
+  }, [permissionSlips, slipSearchTerm, statusFilter]);
 
   const fetchData = async () => {
-    const supabase = createClient()
+    try {
+      // Fetch profiles using server action
+      const profilesResult = await getProfiles();
+      if (profilesResult.success && profilesResult.data) {
+        setUsers(profilesResult.data.profiles || []);
+      } else {
+        console.error("Error fetching profiles:", profilesResult.error);
+      }
 
-    // Fetch all users
-    const { data: usersData } = await supabase.from("profiles").select("*").order("created_at", { ascending: false })
-
-    // Fetch all permission slips with student info
-    const { data: slipsData } = await supabase
-      .from("permission_slips")
-      .select(`
-        *,
-        profiles:student_id (
-          full_name,
-          student_id,
-          email
-        )
-      `)
-      .order("created_at", { ascending: false })
-
-    if (usersData) setUsers(usersData)
-    if (slipsData) setPermissionSlips(slipsData)
-    setIsLoading(false)
-  }
+      // Fetch permission slips using server action
+      const slipsResult = await getPermissionSlips();
+      if (slipsResult.success && slipsResult.data) {
+        setPermissionSlips(slipsResult.data);
+      } else {
+        console.error("Error fetching permission slips:", slipsResult.error);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filterUsers = () => {
-    let filtered = users
+    let filtered = users;
 
     if (roleFilter !== "all") {
-      filtered = filtered.filter((user) => user.role === roleFilter)
+      filtered = filtered.filter((user) => user.role === roleFilter);
     }
 
     if (userSearchTerm) {
@@ -105,117 +140,153 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
         (user) =>
           user.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
           user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-          (user.student_id && user.student_id.toLowerCase().includes(userSearchTerm.toLowerCase())),
-      )
+          (user.student_id &&
+            user.student_id
+              .toLowerCase()
+              .includes(userSearchTerm.toLowerCase()))
+      );
     }
 
-    setFilteredUsers(filtered)
-  }
+    setFilteredUsers(filtered);
+  };
 
   const filterSlips = () => {
-    let filtered = permissionSlips
+    let filtered = permissionSlips;
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((slip) => slip.status === statusFilter)
+      filtered = filtered.filter((slip) => slip.status === statusFilter);
     }
 
     if (slipSearchTerm) {
       filtered = filtered.filter(
         (slip) =>
           slip.title.toLowerCase().includes(slipSearchTerm.toLowerCase()) ||
-          slip.profiles?.full_name.toLowerCase().includes(slipSearchTerm.toLowerCase()),
-      )
+          slip.student_profile?.full_name
+            .toLowerCase()
+            .includes(slipSearchTerm.toLowerCase())
+      );
     }
 
-    setFilteredSlips(filtered)
-  }
+    setFilteredSlips(filtered);
+  };
 
-  const updateUserRole = async (userId: string, newRole: string) => {
-    const supabase = createClient()
-    const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", userId)
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    startTransition(async () => {
+      try {
+        const result = await updateUserRole(userId, newRole);
+        if (result.success) {
+          await fetchData();
+          setSelectedUser(null);
+          setIsEditingUser(false);
+        } else {
+          console.error("Error updating user role:", result.error);
+        }
+      } catch (error) {
+        console.error("Error updating user role:", error);
+      }
+    });
+  };
 
-    if (!error) {
-      await fetchData()
-      setSelectedUser(null)
-      setIsEditingUser(false)
-    }
-  }
-
-  const deleteUser = async (userId: string) => {
-    const supabase = createClient()
-    const { error } = await supabase.from("profiles").delete().eq("id", userId)
-
-    if (!error) {
-      await fetchData()
-      setSelectedUser(null)
-    }
-  }
+  const handleDeleteUser = async (userId: string) => {
+    startTransition(async () => {
+      try {
+        const result = await deleteUser(userId);
+        if (result.success) {
+          await fetchData();
+          setSelectedUser(null);
+        } else {
+          console.error("Error deleting user:", result.error);
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error);
+      }
+    });
+  };
 
   const exportData = () => {
     const csvContent = [
-      ["Student Name", "Student ID", "Event Title", "Event Date", "Status", "Submitted Date"].join(","),
+      [
+        "Student Name",
+        "Student ID",
+        "Event Title",
+        "Event Date",
+        "Status",
+        "Submitted Date",
+      ].join(","),
       ...permissionSlips.map((slip) =>
         [
-          slip.profiles?.full_name || "",
-          slip.profiles?.student_id || "",
+          slip.student_profile?.full_name || "",
+          slip.student_profile?.student_id || "",
           slip.title,
           slip.event_date,
           slip.status,
           new Date(slip.created_at).toLocaleDateString(),
-        ].join(","),
+        ].join(",")
       ),
-    ].join("\n")
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "permission_slips_report.csv"
-    a.click()
-    window.URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "permission_slips_report.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
       case "admin":
-        return "bg-purple-100 text-purple-800"
+        return "bg-purple-100 text-purple-800";
       case "faculty":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "student":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "approved":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "rejected":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   // Calculate statistics
-  const totalUsers = users.length
-  const studentCount = users.filter((u) => u.role === "student").length
-  const facultyCount = users.filter((u) => u.role === "faculty").length
-  const adminCount = users.filter((u) => u.role === "admin").length
-  const totalSlips = permissionSlips.length
-  const pendingSlips = permissionSlips.filter((s) => s.status === "pending").length
-  const approvedSlips = permissionSlips.filter((s) => s.status === "approved").length
-  const rejectedSlips = permissionSlips.filter((s) => s.status === "rejected").length
+  const totalUsers = users.length;
+  const studentCount = users.filter((u) => u.role === "student").length;
+  const facultyCount = users.filter((u) => u.role === "faculty").length;
+  const adminCount = users.filter((u) => u.role === "admin").length;
+  const totalSlips = permissionSlips.length;
+  const pendingSlips = permissionSlips.filter(
+    (s) => s.status === "pending"
+  ).length;
+  const approvedSlips = permissionSlips.filter(
+    (s) => s.status === "approved"
+  ).length;
+  const rejectedSlips = permissionSlips.filter(
+    (s) => s.status === "rejected"
+  ).length;
+
+  if (isLoading) {
+    return <AdminDashboardSkeleton />;
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Admin Management Panel</h1>
-        <p className="text-muted-foreground">Welcome, {profile.full_name} - System Administrator</p>
+        <p className="text-muted-foreground">
+          Welcome, {profile.full_name} - System Administrator
+        </p>
       </div>
 
       {/* Overview Statistics */}
@@ -228,28 +299,39 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
           <CardContent>
             <div className="text-2xl font-bold">{totalUsers}</div>
             <p className="text-xs text-muted-foreground">
-              {studentCount} students, {facultyCount} faculty, {adminCount} admins
+              {studentCount} students, {facultyCount} faculty, {adminCount}{" "}
+              admins
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Requests
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSlips}</div>
-            <p className="text-xs text-muted-foreground">All time submissions</p>
+            <p className="text-xs text-muted-foreground">
+              All time submissions
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Review
+            </CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingSlips}</div>
-            <p className="text-xs text-muted-foreground">Awaiting faculty review</p>
+            <div className="text-2xl font-bold text-yellow-600">
+              {pendingSlips}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting faculty review
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -259,7 +341,12 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {totalSlips > 0 ? Math.round((approvedSlips / (approvedSlips + rejectedSlips)) * 100) : 0}%
+              {totalSlips > 0
+                ? Math.round(
+                    (approvedSlips / (approvedSlips + rejectedSlips)) * 100
+                  )
+                : 0}
+              %
             </div>
             <p className="text-xs text-muted-foreground">
               {approvedSlips} approved, {rejectedSlips} rejected
@@ -278,14 +365,6 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
         {/* User Management Tab */}
         <TabsContent value="users">
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>Manage user accounts and roles</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
             <CardContent>
               {/* User Filters */}
               <div className="flex gap-4 mb-6">
@@ -334,15 +413,22 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                   <TableBody>
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.full_name}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.full_name}
+                        </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <Badge className={getRoleColor(user.role)}>
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            {user.role.charAt(0).toUpperCase() +
+                              user.role.slice(1)}
                           </Badge>
                         </TableCell>
-                        <TableCell>{user.student_id || user.department || "-"}</TableCell>
-                        <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {user.student_id || user.department || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Dialog>
@@ -351,8 +437,8 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    setSelectedUser(user)
-                                    setIsEditingUser(false)
+                                    setSelectedUser(user);
+                                    setIsEditingUser(false);
                                   }}
                                 >
                                   <Eye className="h-4 w-4" />
@@ -366,44 +452,72 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                                   <div className="space-y-4">
                                     <div className="grid gap-2">
                                       <Label>Full Name</Label>
-                                      <Input value={selectedUser.full_name} disabled />
+                                      <Input
+                                        value={selectedUser.full_name}
+                                        disabled
+                                      />
                                     </div>
                                     <div className="grid gap-2">
                                       <Label>Email</Label>
-                                      <Input value={selectedUser.email} disabled />
+                                      <Input
+                                        value={selectedUser.email}
+                                        disabled
+                                      />
                                     </div>
                                     <div className="grid gap-2">
                                       <Label>Role</Label>
                                       {isEditingUser ? (
                                         <Select
                                           value={selectedUser.role}
-                                          onValueChange={(value) => setSelectedUser({ ...selectedUser, role: value })}
+                                          onValueChange={(value) =>
+                                            setSelectedUser({
+                                              ...selectedUser,
+                                              role: value,
+                                            })
+                                          }
                                         >
                                           <SelectTrigger>
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="student">Student</SelectItem>
-                                            <SelectItem value="faculty">Faculty</SelectItem>
-                                            <SelectItem value="admin">Administrator</SelectItem>
+                                            <SelectItem value="student">
+                                              Student
+                                            </SelectItem>
+                                            <SelectItem value="faculty">
+                                              Faculty
+                                            </SelectItem>
+                                            <SelectItem value="admin">
+                                              Administrator
+                                            </SelectItem>
                                           </SelectContent>
                                         </Select>
                                       ) : (
-                                        <Input value={selectedUser.role} disabled />
+                                        <Input
+                                          value={selectedUser.role}
+                                          disabled
+                                        />
                                       )}
                                     </div>
                                     <div className="flex gap-2">
                                       {isEditingUser ? (
                                         <>
                                           <Button
-                                            onClick={() => updateUserRole(selectedUser.id, selectedUser.role)}
+                                            onClick={() =>
+                                              handleUpdateUserRole(
+                                                selectedUser.id,
+                                                selectedUser.role
+                                              )
+                                            }
+                                            disabled={isPending}
                                             className="flex-1"
                                           >
                                             Save Changes
                                           </Button>
                                           <Button
                                             variant="outline"
-                                            onClick={() => setIsEditingUser(false)}
+                                            onClick={() =>
+                                              setIsEditingUser(false)
+                                            }
                                             className="flex-1"
                                           >
                                             Cancel
@@ -411,13 +525,20 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                                         </>
                                       ) : (
                                         <>
-                                          <Button onClick={() => setIsEditingUser(true)} className="flex-1">
+                                          <Button
+                                            onClick={() =>
+                                              setIsEditingUser(true)
+                                            }
+                                            className="flex-1"
+                                          >
                                             <Edit className="h-4 w-4 mr-2" />
                                             Edit Role
                                           </Button>
                                           <Button
                                             variant="destructive"
-                                            onClick={() => deleteUser(selectedUser.id)}
+                                            onClick={() =>
+                                              deleteUser(selectedUser.id)
+                                            }
                                             className="flex-1"
                                           >
                                             <Trash2 className="h-4 w-4 mr-2" />
@@ -447,8 +568,10 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Permission Slip Overview</CardTitle>
-                  <CardDescription>System-wide view of all permission slip requests</CardDescription>
+                  <CardTitle>Permission Slip Overview (MongoDB)</CardTitle>
+                  <CardDescription>
+                    System-wide view of all permission slip requests
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -498,18 +621,26 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                   </TableHeader>
                   <TableBody>
                     {filteredSlips.map((slip) => (
-                      <TableRow key={slip.id}>
-                        <TableCell className="font-medium">{slip.title}</TableCell>
-                        <TableCell>
-                          {slip.profiles?.full_name} ({slip.profiles?.student_id})
+                      <TableRow key={slip._id}>
+                        <TableCell className="font-medium">
+                          {slip.title}
                         </TableCell>
-                        <TableCell>{new Date(slip.event_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {slip.student_profile?.full_name} (
+                          {slip.student_profile?.student_id})
+                        </TableCell>
+                        <TableCell>
+                          {new Date(slip.event_date).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(slip.status)}>
-                            {slip.status.charAt(0).toUpperCase() + slip.status.slice(1)}
+                            {slip.status.charAt(0).toUpperCase() +
+                              slip.status.slice(1)}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(slip.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(slip.created_at).toLocaleDateString()}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -526,20 +657,12 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Analytics & Reports</CardTitle>
-                    <CardDescription>System usage statistics and data export</CardDescription>
+                    <CardTitle>Analytics & Reports (MongoDB)</CardTitle>
+                    <CardDescription>
+                      System usage statistics and data export
+                    </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <BulkPDFButton
-                      permissionSlips={permissionSlips.map((slip) => ({
-                        ...slip,
-                        student: {
-                          full_name: slip.profiles?.full_name || "",
-                          student_id: slip.profiles?.student_id || "",
-                          email: slip.profiles?.email || "",
-                        },
-                      }))}
-                    />
                     <Button onClick={exportData}>
                       <Download className="h-4 w-4 mr-2" />
                       Export CSV
@@ -550,7 +673,9 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
               <CardContent>
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <h3 className="font-semibold mb-4">Request Status Distribution</h3>
+                    <h3 className="font-semibold mb-4">
+                      Request Status Distribution
+                    </h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span>Pending</span>
@@ -559,11 +684,17 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                             <div
                               className="bg-yellow-500 h-2 rounded-full"
                               style={{
-                                width: `${totalSlips > 0 ? (pendingSlips / totalSlips) * 100 : 0}%`,
+                                width: `${
+                                  totalSlips > 0
+                                    ? (pendingSlips / totalSlips) * 100
+                                    : 0
+                                }%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground">{pendingSlips}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {pendingSlips}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -573,11 +704,17 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                             <div
                               className="bg-green-500 h-2 rounded-full"
                               style={{
-                                width: `${totalSlips > 0 ? (approvedSlips / totalSlips) * 100 : 0}%`,
+                                width: `${
+                                  totalSlips > 0
+                                    ? (approvedSlips / totalSlips) * 100
+                                    : 0
+                                }%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground">{approvedSlips}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {approvedSlips}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -587,18 +724,26 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                             <div
                               className="bg-red-500 h-2 rounded-full"
                               style={{
-                                width: `${totalSlips > 0 ? (rejectedSlips / totalSlips) * 100 : 0}%`,
+                                width: `${
+                                  totalSlips > 0
+                                    ? (rejectedSlips / totalSlips) * 100
+                                    : 0
+                                }%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground">{rejectedSlips}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {rejectedSlips}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="font-semibold mb-4">User Role Distribution</h3>
+                    <h3 className="font-semibold mb-4">
+                      User Role Distribution
+                    </h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span>Students</span>
@@ -607,11 +752,17 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                             <div
                               className="bg-green-500 h-2 rounded-full"
                               style={{
-                                width: `${totalUsers > 0 ? (studentCount / totalUsers) * 100 : 0}%`,
+                                width: `${
+                                  totalUsers > 0
+                                    ? (studentCount / totalUsers) * 100
+                                    : 0
+                                }%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground">{studentCount}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {studentCount}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -621,11 +772,17 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                             <div
                               className="bg-blue-500 h-2 rounded-full"
                               style={{
-                                width: `${totalUsers > 0 ? (facultyCount / totalUsers) * 100 : 0}%`,
+                                width: `${
+                                  totalUsers > 0
+                                    ? (facultyCount / totalUsers) * 100
+                                    : 0
+                                }%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground">{facultyCount}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {facultyCount}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -635,11 +792,17 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
                             <div
                               className="bg-purple-500 h-2 rounded-full"
                               style={{
-                                width: `${totalUsers > 0 ? (adminCount / totalUsers) * 100 : 0}%`,
+                                width: `${
+                                  totalUsers > 0
+                                    ? (adminCount / totalUsers) * 100
+                                    : 0
+                                }%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-muted-foreground">{adminCount}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {adminCount}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -651,5 +814,5 @@ export function AdminDashboard({ profile }: AdminDashboardProps) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
