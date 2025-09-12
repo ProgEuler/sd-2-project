@@ -1,41 +1,31 @@
-import { FacultyDashboard } from "@/components/faculty-dashboard";
-import { StudentDashboard } from "@/components/student-dashboard";
+"use client";
 
-const profile = {
-  id: "1",
-  full_name: "Dr. John Doe",
-  role: "faculty",
-  department: "Computer Science",
-  email: "john@gmail.com",
-};
+import useAuth from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-const studentProfile = {
-  id: "2",
-  full_name: "Jane Smith",
-  role: "student",
-  student_id: "S123456",
-  department: "Computer Science",
-  email: "jane@gmail.com",
-  created_at: "2023-10-01T10:00:00Z",
-};
+export default function HomePage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-export default async function HomePage() {
-  const key = "student";
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        // Redirect authenticated users to dashboard
+        router.push("/dashboard");
+      } else {
+        // Redirect unauthenticated users to login
+        router.push("/auth/login");
+      }
+    }
+  }, [user, loading, router]);
 
-  let dashboard: React.ReactNode;
-
-  switch (key) {
-    case "student":
-      dashboard = <StudentDashboard profile={studentProfile} />;
-      break;
-
-    case "faculty":
-      dashboard = <FacultyDashboard profile={profile} />;
-      break;
-
-    default:
-      dashboard = <div>No dashboard available</div>;
-  }
-
-  return <>{dashboard}</>;
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">University Portal</h1>
+        <p className="text-muted-foreground">Redirecting...</p>
+      </div>
+    </div>
+  );
 }

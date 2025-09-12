@@ -1,25 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-// import { Input } from "@/components/ui/input"
-// import { Label } from "@/components/ui/label"
-// import { Textarea } from "@/components/ui/textarea"
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { FileText, Clock, CheckCircle, XCircle, Eye, Search, Filter, Calendar, MapPin, Phone, User } from "lucide-react"
+import { FileText, Clock, CheckCircle, XCircle, Eye, Calendar, Phone, User } from "lucide-react"
 import { PDFDownloadButton, BulkPDFButton } from "@/components/pdf-download-button"
 import { PermissionSlipSkeleton } from "@/components/permission-slip-skeleton"
-
-interface Profile {
-  id: string
-  email: string
-  full_name: string
-  role: string
-  department: string
-}
+import useProfile from "@/hooks/useProfile"
 
 interface PermissionSlip {
   id: string
@@ -42,11 +31,12 @@ interface PermissionSlip {
   }
 }
 
-interface FacultyDashboardProps {
-  profile: Profile
-}
+export function FacultyDashboard() {
+  const { profile } = useProfile();
 
-export function FacultyDashboard({ profile }: FacultyDashboardProps) {
+  if (!profile || profile.role !== "faculty") {
+    return <div>Invalid profile for faculty dashboard</div>;
+  }
   const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>(
    [
   {

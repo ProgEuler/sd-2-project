@@ -1,8 +1,6 @@
 "use client"
 
 import type React from "react"
-
-// import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
+import client from "@/app/api/client"
+import { signup } from "../actions"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -24,11 +25,12 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-   //  const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
@@ -44,28 +46,31 @@ export default function RegisterPage() {
       return
     }
 
-//     try {
-//       const { error } = await supabase.auth.signUp({
-//         email: formData.email,
-//         password: formData.password,
-//         options: {
-//           emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-//           data: {
-//             full_name: formData.fullName,
-//             role: formData.role,
-//             student_id: formData.studentId || null,
-//             department: formData.department || null,
-//           },
-//         },
-//       })
-//       if (error) throw error
-//       router.push("/auth/verify-email")
-//     } catch (error: unknown) {
-//       setError(error instanceof Error ? error.message : "An error occurred")
-//     } finally {
-//       setIsLoading(false)
-//     }
-//   }
+    try {
+      const { error } = await client.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: formData.fullName,
+            role: formData.role,
+            student_id: formData.studentId || null,
+            department: formData.department || null,
+          },
+        },
+      })
+
+      if (error) throw error
+
+      // Redirect to login page with success message
+      router.push("/auth/login")
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
@@ -76,7 +81,7 @@ export default function RegisterPage() {
             <CardDescription>Register for university permission slip access</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRegister}>
+            <form>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="fullName">Full Name</Label>
@@ -108,7 +113,6 @@ export default function RegisterPage() {
                     <SelectContent>
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="faculty">Faculty</SelectItem>
-                      <SelectItem value="admin">Administrator</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -124,7 +128,7 @@ export default function RegisterPage() {
                     />
                   </div>
                 )}
-                {(formData.role === "faculty" || formData.role === "admin") && (
+
                   <div className="grid gap-2">
                     <Label htmlFor="department">Department</Label>
                     <Input
@@ -135,34 +139,56 @@ export default function RegisterPage() {
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     />
                   </div>
-                )}
+
                 <div className="grid gap-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button formAction={signup} type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
               </div>

@@ -1,25 +1,16 @@
 "use client"
 
-import { useState, useEffect, useTransition } from "react"
+import { useState } from "react"
 // import { getPermissionSlips } from "@/lib/actions/permission-slip-actions"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
 import { PDFDownloadButton } from "@/components/pdf-download-button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { PermissionSlipSkeleton } from "@/components/permission-slip-skeleton"
 import { PermissionSlipForm } from "./permission-slip-form"
-
-interface Profile {
-  id: string
-  email: string
-  full_name: string
-  role: string
-  student_id?: string
-  department?: string
-  created_at: string
-}
+import useProfile from "@/hooks/useProfile"
 
 interface PermissionSlip {
   id: string
@@ -77,11 +68,12 @@ const permissionSlips: PermissionSlip[] = [
 ];
 
 
-interface StudentDashboardProps {
-  profile: Profile
-}
+export function StudentDashboard() {
+  const { profile } = useProfile();
 
-export function StudentDashboard({ profile }: StudentDashboardProps) {
+  if (!profile || profile.role !== "student") {
+    return <div>Invalid profile for student dashboard</div>;
+  }
 //   const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>([])
 
   const [isLoading, setIsLoading] = useState(false)
