@@ -8,10 +8,22 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
+import { useFormStatus } from "react-dom"
 import client from "@/app/api/client"
 import { signup } from "../actions"
+import { toast } from "sonner"
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? "Creating account..." : "Create Account"}
+    </Button>
+  )
+}
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -24,53 +36,20 @@ export default function RegisterPage() {
     department: "",
   })
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+    const [state, formAction] = useActionState(signup, { error: undefined, success: undefined })
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      setIsLoading(false)
-      return
+    useEffect(() => {
+    if (state.error) {
+      toast.error(state.error)
     }
-
-    if (!formData.role) {
-      setError("Please select a role")
-      setIsLoading(false)
-      return
+    if (state.success) {
+      toast.success(state.success)
     }
-
-    try {
-      const { error } = await client.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            full_name: formData.fullName,
-            role: formData.role,
-            student_id: formData.studentId || null,
-            department: formData.department || null,
-          },
-        },
-      })
-
-      if (error) throw error
-
-      // Redirect to login page with success message
-      router.push("/auth/login")
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [state])
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
@@ -81,12 +60,13 @@ export default function RegisterPage() {
             <CardDescription>Register for university permission slip access</CardDescription>
           </CardHeader>
           <CardContent>
-            <form>
+            <form action={formAction}>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input
                     id="fullName"
+                    name="fullName"
                     type="text"
                     required
                     value={formData.fullName}
@@ -97,6 +77,7 @@ export default function RegisterPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="student@university.edu"
                     required
@@ -106,7 +87,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role">Role</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                  <Select name="role" value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
@@ -121,6 +102,7 @@ export default function RegisterPage() {
                     <Label htmlFor="studentId">Student ID</Label>
                     <Input
                       id="studentId"
+                      name="studentId"
                       type="text"
                       required
                       value={formData.studentId}
@@ -129,22 +111,24 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      type="text"
-                      required
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    name="department"
+                    type="text"
+                    required
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  />
+                </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       required
@@ -166,6 +150,7 @@ export default function RegisterPage() {
                   <div className="relative">
                     <Input
                       id="confirmPassword"
+                      name="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
                       required
@@ -188,9 +173,7 @@ export default function RegisterPage() {
                   </div>
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button formAction={signup} type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create Account"}
-                </Button>
+                <SubmitButton />
               </div>
               <div className="mt-4 text-center text-sm">
                 Already have an account?{" "}

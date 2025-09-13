@@ -38,7 +38,7 @@ interface ProfileProviderProps {
 }
 
 export const ProfileProvider = ({ children }: ProfileProviderProps) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,30 +1,41 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
-import client from "@/app/api/client"
-import useAuth from "@/hooks/useAuth"
 import { toast } from "sonner"
+import client from "@/app/api/client"
+import { logout } from "@/app/auth/actions";
 
 export function LogoutButton() {
-   const { user, loading } = useAuth()
   const router = useRouter()
 
   const handleLogout = async () => {
-    await client.auth.signOut().then(() => {
-      router.push("/auth/login")
+    try {
+      console.log("Logging out...")
+      const { error } = await client.auth.signOut()
+
+      if (error) {
+        console.error("Logout error:", error)
+        toast.error("Failed to logout: " + error.message)
+        return
+      }
+
+      console.log("Logout successful")
       toast.success("Logged out successfully!")
-    }).catch((error) => {
-      toast.error(error.message)
-    })
-    router.push("/")
+      router.push("/auth/login")
+    } catch (error: any) {
+      console.error("Logout failed:", error)
+      toast.error("Failed to logout")
+    }
   }
-  if(!user) return null;
+
   return (
-    <Button variant="outline" size="sm" onClick={handleLogout}>
-      <LogOut className="h-4 w-4 mr-2" />
+   <form action={logout}>
+    <Button variant="outline" size="sm">
+      <LogOut className="h-4w-4 mr-2" />
       Sign Out
     </Button>
+   </form>
   )
 }

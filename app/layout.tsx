@@ -9,6 +9,7 @@ import { Suspense } from "react";
 import { AuthProvider } from "@/lib/context/auth-provider";
 import { ProfileProvider } from "@/lib/context/profile-provider";
 import { LogoutButton } from "@/components/logout-button";
+import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
   title: "Permission Slip",
@@ -16,12 +17,14 @@ export const metadata: Metadata = {
 };
 
 async function HeaderContent() {
+   const supabase = await createClient()
+   const { data, error } = await supabase.auth.getUser()
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="text-lg font-semibold">University Portal</div>
         <div className="flex items-center gap-3">
-          <LogoutButton />
+          { data?.user && !error ? <LogoutButton /> : null }
         </div>
       </div>
     </header>
@@ -39,8 +42,8 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
     >
       <body>
-        <AuthProvider>
-          <ProfileProvider>
+        {/* <AuthProvider> */}
+          {/* <ProfileProvider> */}
             <div className="min-h-screen bg-background">
               <Suspense
                 fallback={
@@ -58,8 +61,8 @@ export default function RootLayout({
             </div>
             <Toaster position="top-right" />
             <Analytics />
-          </ProfileProvider>
-        </AuthProvider>
+          {/* </ProfileProvider> */}
+        {/* </AuthProvider> */}
       </body>
     </html>
   );

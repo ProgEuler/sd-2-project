@@ -22,14 +22,25 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     // Get the initial session
-    client.auth.getSession().then(({ data }) => {
-      setUser(data?.session?.user ?? null);
+    client.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error("Error getting session:", error);
+        setUser(null);
+      } else {
+        console.log("Initial session:", data?.session);
+        setUser(data?.session?.user ?? null);
+      }
+      setIsLoading(false);
+    }).catch((error) => {
+      console.error("Failed to get session:", error);
+      setUser(null);
       setIsLoading(false);
     });
 
     // Listen for auth changes
     const { data: authListener } = client.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", { event, session });
         setUser(session?.user ?? null);
         setIsLoading(false);
       }
