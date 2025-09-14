@@ -1,103 +1,126 @@
 "use client"
 
-import { useState } from "react"
-// import { getPermissionSlips } from "@/lib/actions/permission-slip-actions"
+import { useActionState, useEffect, useState, useTransition } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, FileText, Clock, CheckCircle, XCircle } from "lucide-react"
-import { PDFDownloadButton } from "@/components/pdf-download-button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { PermissionSlipSkeleton } from "@/components/permission-slip-skeleton"
-import { PermissionSlipForm } from "./permission-slip-form"
-import useProfile from "@/hooks/useProfile"
-
-interface PermissionSlip {
-  id: string
-  title: string
-  description: string
-  event_date: string
-  event_location: string
-  emergency_contact_name: string
-  emergency_contact_phone: string
-  status: "pending" | "approved" | "rejected"
-  faculty_comments?: string
-  created_at: string
-  student_id: string
-}
-
-const permissionSlips: PermissionSlip[] = [
-  {
-    id: "ps1",
-    title: "Field Trip to Science Museum",
-    description: "A trip to the National Science Museum to explore interactive exhibits.",
-    event_date: "2025-10-15",
-    event_location: "National Science Museum, City Center",
-    emergency_contact_name: "Mary Smith",
-    emergency_contact_phone: "+1-555-123-4567",
-    status: "pending",
-    created_at: "2025-09-01T10:00:00Z",
-    student_id: "S123456",
-  },
-  {
-    id: "ps2",
-    title: "Sports Tournament",
-    description: "Regional inter-school football tournament.",
-    event_date: "2025-11-02",
-    event_location: "Greenfield Stadium",
-    emergency_contact_name: "Robert Johnson",
-    emergency_contact_phone: "+1-555-987-6543",
-    status: "approved",
-    faculty_comments: "Approved. Ensure proper safety gear is used.",
-    created_at: "2025-09-05T14:30:00Z",
-    student_id: "S654321",
-  },
-  {
-    id: "ps3",
-    title: "Community Service Project",
-    description: "Volunteering at the local food bank.",
-    event_date: "2025-09-20",
-    event_location: "Downtown Food Bank",
-    emergency_contact_name: "Emily Davis",
-    emergency_contact_phone: "+1-555-222-3344",
-    status: "rejected",
-    faculty_comments: "Rejected due to conflict with midterm exams.",
-    created_at: "2025-09-07T09:15:00Z",
-    student_id: "S789012",
-  },
-];
-
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FileTextIcon, PlusIcon, RefreshCwIcon, UserIcon, Clock, CheckCircle, XCircle } from "lucide-react"
+import { fetchDashboardData, submitPermissionRequest, DashboardState } from "@/app/dashboard/actions"
+import { toast } from "sonner"
 
 export function StudentDashboard() {
-  const { profile } = useProfile();
+  const [isClient, setIsClient] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [showRequestForm, setShowRequestForm] = useState(false)
+  const [formData, setFormData] = useState({
+    requestType: "",
+    subject: "",
+    reason: "",
+  })
 
-  if (!profile || profile.role !== "student") {
-    return <div>Invalid profile for student dashboard</div>;
+  const [state, fetchAction] = useActionState(fetchDashboardData, {
+    user: undefined,
+    requests: undefined,
+    error: undefined,
+    success: undefined
+  } as DashboardState)
+
+  const [requestState, submitAction] = useActionState(submitPermissionRequest, {
+    user: undefined,
+    requests: undefined,
+    error: undefined,
+    success: undefined
+  } as DashboardState)
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Fetch dashboard data on component mount
+  useEffect(() => {
+    if (isClient && !state.user && !state.error && !isPending) {
+      startTransition(() => {
+        fetchAction()
+      })
+    }
+  }, [isClient, fetchAction, state.user, state.error, isPending])
+
+  // Handle toast notifications
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error)
+    }
+  }, [state.error])
+
+  useEffect(() => {
+    if (requestState.error) {
+      toast.error(requestState.error)
+    }
+    if (requestState.success && requestState.success.includes('Permission request submitted successfully')) {
+      toast.success('Permission request submitted successfully!')
+      setShowRequestForm(false)
+      setFormData({
+        requestType: "",
+        subject: "",
+        reason: "",
+      })
+    }
+  }, [requestState])
+
+  // Don't render anything until we're on the client
+  if (!isClient) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Loading Dashboard...</h2>
+        <p className="text-muted-foreground">Please wait while we load your profile.</p>
+      </div>
+    </div>
   }
-//   const [permissionSlips, setPermissionSlips] = useState<PermissionSlip[]>([])
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Show loading state
+  if (isPending || (!state.user && !state.error)) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <RefreshCwIcon className="h-8 w-8 animate-spin mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+        <p className="text-muted-foreground">Fetching your dashboard data...</p>
+      </div>
+    </div>
+  }
 
-//   const fetchPermissionSlips = async () => {
-//     try {
-//       setError(null)
-//       // const result = await getPermissionSlips()
-//       if (result.success && result.data) {
-//         setPermissionSlips(result.data)
-//       } else {
-//         setError(result.error || "Failed to fetch permission slips")
-//         console.error("Error fetching permission slips:", result.error)
-//       }
-//     } catch (error) {
-//       setError("An unexpected error occurred")
-//       console.error("Error fetching permission slips:", error)
-//     } finally {
-//       setIsLoading(false)
-//     }
-//   }
+  // Show error state
+  if (state.error) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6 text-center">
+          <p className="text-red-500 mb-4">Error: {state.error}</p>
+          <form action={fetchAction}>
+            <Button type="submit" variant="outline" disabled={isPending}>
+              <RefreshCwIcon className="h-4 w-4 mr-2" />
+              {isPending ? 'Loading...' : 'Try Again'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  }
 
+  const user = requestState.user || state.user
+  const requests = requestState.requests || state.requests || []
+
+  if (!user) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">No Profile Available</h2>
+        <p className="text-muted-foreground">Unable to load your profile data.</p>
+      </div>
+    </div>
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -108,7 +131,7 @@ export function StudentDashboard() {
       case "rejected":
         return <XCircle className="h-4 w-4" />
       default:
-        return <FileText className="h-4 w-4" />
+        return <FileTextIcon className="h-4 w-4" />
     }
   }
 
@@ -125,46 +148,39 @@ export function StudentDashboard() {
     }
   }
 
-  const handleFormSuccess = () => {
-    setShowForm(false)
-   //  startTransition(() => {
-   //    fetchPermissionSlips()
-   //  })
-  }
-
   return (
     <div className="container mx-auto p-6 max-w-6xl">
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Student Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {profile.full_name} {profile.student_id && `(ID: ${profile.student_id})`}
+            Welcome back, {user.name} {user.studentId && `(ID: ${user.studentId})`}
           </p>
         </div>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
+        <div className="flex gap-4">
+          <Button onClick={() => setShowRequestForm(true)}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            New Request
+          </Button>
+          <form action={fetchAction}>
+            <Button type="submit" variant="outline" disabled={isPending}>
+              <RefreshCwIcon className="h-4 w-4 mr-2" />
+              Refresh
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Permission Slip Request</DialogTitle>
-            </DialogHeader>
-            <PermissionSlipForm onSuccess={handleFormSuccess} />
-          </DialogContent>
-        </Dialog>
+          </form>
+        </div>
       </div>
 
+      {/* Statistics Cards */}
       <div className="grid gap-6 md:grid-cols-3 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileTextIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{permissionSlips.length}</div>
+            <div className="text-2xl font-bold">{requests.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -174,7 +190,7 @@ export function StudentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {permissionSlips.filter((slip) => slip.status === "pending").length}
+              {requests.filter((req) => req.status === "pending").length}
             </div>
           </CardContent>
         </Card>
@@ -185,68 +201,128 @@ export function StudentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {permissionSlips.filter((slip) => slip.status === "approved").length}
+              {requests.filter((req) => req.status === "approved").length}
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Permission Request Form */}
+      {showRequestForm && (
+        <Card className="mb-8">
+          <CardContent>
+            <form action={submitAction}>
+              <div className="grid grid-4 gap-4">
+               <div className="flex gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="requestType">Request Type</Label>
+                  <Select
+                    name="requestType"
+                    value={formData.requestType}
+                    onValueChange={(value) => setFormData({ ...formData, requestType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select request type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="leave">Leave Application</SelectItem>
+                      <SelectItem value="exam_absence">Exam Absence</SelectItem>
+                      <SelectItem value="medical">Medical Leave</SelectItem>
+                      <SelectItem value="personal">Personal</SelectItem>
+                      <SelectItem value="family_emergency">Family Emergency</SelectItem>
+                      <SelectItem value="official_work">Official Work</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2 w-full">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    placeholder="Brief subject of your request"
+                    required
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  />
+                </div>
+
+               </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="reason">Reason</Label>
+                  <Textarea
+                    id="reason"
+                    name="reason"
+                    placeholder="Detailed reason for your request"
+                    required
+                    rows={4}
+                    value={formData.reason}
+                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? 'Submitting...' : 'Submit Request'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowRequestForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Permission Requests List */}
       <Card>
         <CardContent>
-          {isLoading ? (
-            <PermissionSlipSkeleton variant="student" showStats={false} />
-          ) : error ? (
+          {requests.length === 0 ? (
             <div className="text-center py-8">
-              <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-red-600">Error Loading Requests</h3>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              {/* <Button onClick={() => fetchPermissionSlips()} variant="outline">
-                Try Again
-              </Button> */}
-            </div>
-          ) : permissionSlips.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <FileTextIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No requests yet</h3>
-              <p className="text-muted-foreground mb-4">Submit your first permission slip request to get started.</p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+              <p className="text-muted-foreground mb-4">Submit your first permission request to get started.</p>
+              <Button onClick={() => setShowRequestForm(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
                 Create Request
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              {permissionSlips.map((slip) => (
-                <div key={slip.id} className="border rounded-lg p-4">
+              {requests.map((request) => (
+                <div key={request.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <h3 className="font-semibold">{slip.title}</h3>
-                      <p className="text-sm text-muted-foreground">{slip.description}</p>
+                      <h3 className="font-semibold">{request.subject}</h3>
+                      <p className="text-sm text-muted-foreground">{request.reason}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(slip.status)}>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(slip.status)}
-                          {slip.status.charAt(0).toUpperCase() + slip.status.slice(1)}
-                        </div>
-                      </Badge>
-                      <PDFDownloadButton
-                        permissionSlip={{
-                          ...slip,
-                          student: {
-                            full_name: profile.full_name,
-                            student_id: profile.student_id || "",
-                            email: profile.email,
-                          },
-                        }}
-                      />
-                    </div>
+                    <Badge className={getStatusColor(request.status)}>
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(request.status)}
+                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      </div>
+                    </Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium">Submitted:</span> {new Date(slip.created_at).toLocaleDateString()}
+                      <span className="font-medium">Type:</span> {request.requestType.replace('_', ' ')}
+                    </div>
+                    <div>
+                      <span className="font-medium">Submitted:</span> {new Date(request.submittedAt).toLocaleDateString()}
                     </div>
                   </div>
+                  {request.facultyComments && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded">
+                      <p className="text-sm font-medium text-gray-700">Faculty Comments:</p>
+                      <p className="text-sm text-gray-600">{request.facultyComments}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

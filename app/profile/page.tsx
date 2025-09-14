@@ -4,14 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { User, IdCard, Building, GraduationCap, Calendar, Edit, FileText, RefreshCw } from "lucide-react"
-import { useActionState, useEffect, useState } from "react"
+import { useActionState, useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import ProfileLoading from "./loading"
 import { fetchUserProfile, ProfileState } from "./action"
 
 export default function ProfilePage() {
   const [isClient, setIsClient] = useState(false)
-  const [state, action, isPending] = useActionState(fetchUserProfile, {
+  const [isPending, startTransition] = useTransition()
+  const [state, action] = useActionState(fetchUserProfile, {
     profile: undefined,
     error: undefined,
     success: undefined
@@ -25,11 +26,12 @@ export default function ProfilePage() {
   // Fetch profile data on component mount (only on client)
   useEffect(() => {
     if (isClient && !state.profile && !state.error && !isPending) {
-      // Trigger the action on mount
-      const formData = new FormData()
-      action()
+      // Trigger the action on mount wrapped in startTransition
+      startTransition(() => {
+        action()
+      })
     }
-  }, [isClient, action, state.profile, state.error, isPending])
+  }, [isClient, action, state.profile, state.error, isPending, startTransition])
 
   // Don't render anything until we're on the client
   if (!isClient) {

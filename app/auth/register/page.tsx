@@ -33,6 +33,8 @@ export default function RegisterPage() {
       role: "",
       studentId: "",
       department: "",
+      section: "",
+      semester: "",
    })
    const [error, setError] = useState<string | null>(null)
    const [showPassword, setShowPassword] = useState(false)
@@ -111,6 +113,54 @@ export default function RegisterPage() {
                                  <SelectItem value="PHARMACY">PHARMACY</SelectItem>
                                  <SelectItem value="BBA">BBA</SelectItem>
                                  <SelectItem value="ENGLISH">ENGLISH</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                           <Label htmlFor="section">Section</Label>
+                           <Select name="section" value={formData.section} onValueChange={(value) => setFormData({ ...formData, section: value })}>
+                              <SelectTrigger className="w-full">
+                                 <SelectValue placeholder="Select your section" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <div className="grid grid-cols-3 gap-1 p-2">
+                                    <SelectItem value="A" className="text-center">A</SelectItem>
+                                    <SelectItem value="B" className="text-center">B</SelectItem>
+                                    <SelectItem value="C" className="text-center">C</SelectItem>
+                                    <SelectItem value="D" className="text-center">D</SelectItem>
+                                    <SelectItem value="E" className="text-center">E</SelectItem>
+                                    <SelectItem value="F" className="text-center">F</SelectItem>
+                                    <SelectItem value="G" className="text-center">G</SelectItem>
+                                    <SelectItem value="H" className="text-center">H</SelectItem>
+                                    <SelectItem value="I" className="text-center">I</SelectItem>
+                                    <SelectItem value="J" className="text-center">J</SelectItem>
+                                    <SelectItem value="K" className="text-center">K</SelectItem>
+                                 </div>
+                              </SelectContent>
+
+                           </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                           <Label htmlFor="semester">Current Semester</Label>
+                           <Select name="semester" value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
+                              <SelectTrigger className="w-full">
+                                 <SelectValue placeholder="Select your current semester" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="1st">1st Semester</SelectItem>
+                                 <SelectItem value="2nd">2nd Semester</SelectItem>
+                                 <SelectItem value="3rd">3rd Semester</SelectItem>
+                                 <SelectItem value="4th">4th Semester</SelectItem>
+                                 <SelectItem value="5th">5th Semester</SelectItem>
+                                 <SelectItem value="6th">6th Semester</SelectItem>
+                                 <SelectItem value="7th">7th Semester</SelectItem>
+                                 <SelectItem value="8th">8th Semester</SelectItem>
+                                 <SelectItem value="9th">9th Semester</SelectItem>
+                                 <SelectItem value="10th">10th Semester</SelectItem>
+                                 <SelectItem value="11th">11th Semester</SelectItem>
+                                 <SelectItem value="12th">12th Semester</SelectItem>
                               </SelectContent>
                            </Select>
                         </div>

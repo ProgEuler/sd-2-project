@@ -43,8 +43,13 @@ export async function signup(prevState: LoginState, formData: FormData): Promise
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const name = formData.get("name") as string;
+  const name = formData.get("fullName") as string;
   const role = formData.get("role") as string;
+
+  // Validate required fields
+  if (!email || !password || !name) {
+    return { error: 'Email, password, and full name are required' }
+  }
 
   const { data: user, error } = await supabase.auth.signUp({ email, password })
 
@@ -52,22 +57,26 @@ export async function signup(prevState: LoginState, formData: FormData): Promise
     return { error: error.message }
   }
 
-  await dbConnect();
+  try {
+    await dbConnect();
 
-  await User.create({
-    supabaseId: user.user?.id,
-    email: formData.get("email"),
-    name: formData.get("name"),
-    role: "student",
-    section: formData.get("section"),
-    department: formData.get("department"),
-    student_id: formData.get("student_id"),
-    semester: formData.get("semester"),
-  });
+    await User.create({
+      supabaseId: user.user?.id,
+      email: formData.get("email"),
+      name: formData.get("fullName"),
+      role: "student",
+      section: formData.get("section"),
+      department: formData.get("department"),
+      student_id: formData.get("studentId"),
+      semester: formData.get("semester"),
+    });
+  } catch (dbError: any) {
+    console.error('Database error:', dbError)
+    return { error: `Database error: ${dbError.message}` }
+  }
 
   revalidatePath('/', 'layout')
   redirect('/')
-  return { success: 'registration completed'}
 }
 
 export async function logout() {
