@@ -3,63 +3,88 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { User, IdCard, Building, GraduationCap, Calendar, Edit, FileText } from "lucide-react"
-import { useEffect, useState } from "react"
+import { User, IdCard, Building, GraduationCap, Calendar, Edit, FileText, RefreshCw } from "lucide-react"
+import { useActionState, useEffect, useState } from "react"
 import Link from "next/link"
 import ProfileLoading from "./loading"
-
-// Mock user data - replace with actual data fetching
-interface UserProfile {
-  name: string
-  id: string
-  section: string
-  department: string
-  semester: string
-  email?: string
-  role?: string
-}
+import { fetchUserProfile, ProfileState } from "./action"
 
 export default function ProfilePage() {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isClient, setIsClient] = useState(false)
+  const [state, action, isPending] = useActionState(fetchUserProfile, {
+    profile: undefined,
+    error: undefined,
+    success: undefined
+  } as ProfileState)
 
-  // Mock data - replace with actual API call
+  // Ensure we're on the client side
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setUserProfile({
-        name: "John Doe",
-        id: "2021-1-60-123",
-        section: "A",
-        department: "Computer Science & Engineering",
-        semester: "7th Semester",
-        email: "john.doe@university.edu",
-        role: "Student"
-      })
-      setIsLoading(false)
-    }, 1000)
+    setIsClient(true)
   }, [])
 
-  if (isLoading) {
-     return <ProfileLoading />
+  // Fetch profile data on component mount (only on client)
+  useEffect(() => {
+    if (isClient && !state.profile && !state.error && !isPending) {
+      // Trigger the action on mount
+      const formData = new FormData()
+      action()
+    }
+  }, [isClient, action, state.profile, state.error, isPending])
+
+  // Don't render anything until we're on the client
+  if (!isClient) {
+    return <ProfileLoading />
   }
 
-  if (!userProfile) {
+  // Show loading state
+  if (isPending || (!state.profile && !state.error)) {
+    return <ProfileLoading />
+  }
+
+  // Show error state
+  if (state.error) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <p className="text-gray-600">Unable to load profile information.</p>
+            <p className="text-red-500 mb-4">Error: {state.error}</p>
+            <form action={action}>
+              <Button type="submit" variant="outline" disabled={isPending}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {isPending ? 'Loading...' : 'Try Again'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
     )
   }
 
+  // Show no profile state
+  if (!state.profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <p className="text-gray-600 mb-4">Unable to load profile information.</p>
+            <form action={action}>
+              <Button type="submit" variant="outline" disabled={isPending}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {isPending ? 'Loading...' : 'Refresh'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const userProfile = state.profile
+  console.log(userProfile)
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="grid gap-6 md:grid-cols-2">
           {/* Main Profile Card */}
           <Card className="md:col-span-2">
@@ -76,10 +101,6 @@ export default function ProfilePage() {
                     </CardDescription>
                   </div>
                 </div>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Edit className="h-4 w-4" />
-                  Edit Profile
-                </Button>
               </div>
             </CardHeader>
           </Card>
@@ -151,12 +172,18 @@ export default function ProfilePage() {
 
         {/* Additional Actions */}
         <div className="mt-8 flex flex-wrap gap-4">
-         <Link href={'/dashboard'}>
-          <Button className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Get permission slip
-          </Button>
-         </Link>
+          <Link href={'/dashboard'}>
+            <Button className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Get permission slip
+            </Button>
+          </Link>
+          <form action={action}>
+            <Button type="submit" variant="outline" size="lg" disabled={isPending}>
+              <RefreshCw className={`h-4 w-4 mr-2`} />
+              Refresh
+            </Button>
+          </form>
         </div>
       </div>
     </div>

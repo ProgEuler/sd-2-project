@@ -1,4 +1,3 @@
-import type React from "react";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -6,8 +5,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Suspense } from "react";
-import { AuthProvider } from "@/lib/context/auth-provider";
-import { ProfileProvider } from "@/lib/context/profile-provider";
 import { LogoutButton } from "@/components/logout-button";
 import { createClient } from "@/utils/supabase/server";
 
@@ -19,6 +16,7 @@ export const metadata: Metadata = {
 async function HeaderContent() {
    const supabase = await createClient()
    const { data, error } = await supabase.auth.getUser()
+
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -42,8 +40,6 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
     >
       <body>
-        {/* <AuthProvider> */}
-          {/* <ProfileProvider> */}
             <div className="min-h-screen bg-background">
               <Suspense
                 fallback={
@@ -61,8 +57,6 @@ export default function RootLayout({
             </div>
             <Toaster position="top-right" />
             <Analytics />
-          {/* </ProfileProvider> */}
-        {/* </AuthProvider> */}
       </body>
     </html>
   );

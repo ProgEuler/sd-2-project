@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
+import { UserProfile } from '@/types/profile'
+import { dbConnect } from '@/lib/mongodb'
+import User from '@/models/User'
 
 type LoginState = {
   error?: string
@@ -38,16 +41,30 @@ export async function login(prevState: LoginState, formData: FormData): Promise<
 export async function signup(prevState: LoginState, formData: FormData): Promise<LoginState> {
   const supabase = await createClient()
 
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const name = formData.get("name") as string;
+  const role = formData.get("role") as string;
 
-  const { error } = await supabase.auth.signUp(data)
+  const { data: user, error } = await supabase.auth.signUp({ email, password })
 
   if (error) {
     return { error: error.message }
   }
+
+  await dbConnect();
+
+  await User.create({
+    supabaseId: user.user?.id,
+    email: formData.get("email"),
+    name: formData.get("name"),
+    role: "student",
+    section: formData.get("section"),
+    department: formData.get("department"),
+    student_id: formData.get("student_id"),
+    semester: formData.get("semester"),
+  });
+
   revalidatePath('/', 'layout')
   redirect('/')
   return { success: 'registration completed'}
