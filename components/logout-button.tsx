@@ -31,11 +31,9 @@ export function LogoutButton() {
   }
 
   return (
-   <form action={logout}>
-    <Button variant="outline" size="sm">
+    <Button variant="outline" size="sm" onClick={handleLogout}>
       <LogOut className="h-4w-4 mr-2" />
       Sign Out
     </Button>
-   </form>
   )
 }

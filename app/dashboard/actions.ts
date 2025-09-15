@@ -39,7 +39,6 @@ export interface DashboardState {
   success?: string
 }
 
-// Fetch user data and their permission requests
 export async function fetchDashboardData(
   prevState: DashboardState
 ): Promise<DashboardState> {
@@ -60,7 +59,7 @@ export async function fetchDashboardData(
 
     // Connect to MongoDB
     await dbConnect()
-    
+
     // Fetch user profile from MongoDB
     const mongoUser = await User.findOne({ supabaseId: user.id })
 
@@ -82,6 +81,22 @@ export async function fetchDashboardData(
         .lean()
     }
 
+    interface MongoPermissionRequest {
+        _id: any; // or mongoose.Types.ObjectId
+        requestType: string;
+        subject: string;
+        reason: string;
+        status: 'pending' | 'approved' | 'rejected';
+        submittedAt: Date;
+        facultyComments?: string;
+        studentName?: string;
+        studentId?: string;
+        email?: string;
+        department?: string;
+        section?: string;
+        semester?: string;
+      }
+
     // Map user data
     const dashboardUser: DashboardUser = {
       name: mongoUser.name,
@@ -94,7 +109,7 @@ export async function fetchDashboardData(
     }
 
     // Map permission requests
-    const permissionRequests: PermissionRequestData[] = requests.map(request => ({
+    const permissionRequests: PermissionRequestData[] = (requests as any as MongoPermissionRequest[]).map(request => ({
       id: request._id.toString(),
       requestType: request.requestType,
       subject: request.subject,
@@ -124,7 +139,6 @@ export async function fetchDashboardData(
   }
 }
 
-// Submit a new permission request
 export async function submitPermissionRequest(
   prevState: DashboardState,
   formData: FormData
@@ -145,7 +159,7 @@ export async function submitPermissionRequest(
 
     // Connect to MongoDB
     await dbConnect()
-    
+
     // Fetch user profile
     const mongoUser = await User.findOne({ supabaseId: user.id })
 
@@ -196,7 +210,6 @@ export async function submitPermissionRequest(
   }
 }
 
-// Approve or reject a permission request (faculty only)
 export async function reviewPermissionRequest(
   prevState: DashboardState,
   formData: FormData
@@ -217,7 +230,7 @@ export async function reviewPermissionRequest(
 
     // Connect to MongoDB
     await dbConnect()
-    
+
     // Fetch user profile to verify faculty role
     const mongoUser = await User.findOne({ supabaseId: user.id })
 

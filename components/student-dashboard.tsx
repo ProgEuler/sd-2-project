@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileTextIcon, PlusIcon, RefreshCwIcon, UserIcon, Clock, CheckCircle, XCircle } from "lucide-react"
 import { fetchDashboardData, submitPermissionRequest, DashboardState } from "@/app/dashboard/actions"
 import { toast } from "sonner"
+import { PDFDownloadButton } from "@/components/pdf-download-button"
 
 export function StudentDashboard() {
   const [isClient, setIsClient] = useState(false)
@@ -302,12 +303,17 @@ export function StudentDashboard() {
                       <h3 className="font-semibold">{request.subject}</h3>
                       <p className="text-sm text-muted-foreground">{request.reason}</p>
                     </div>
-                    <Badge className={getStatusColor(request.status)}>
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(request.status)}
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </div>
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getStatusColor(request.status)}>
+                        <div className="flex items-center gap-1">
+                          {getStatusIcon(request.status)}
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </div>
+                      </Badge>
+                      {request.status === "approved" && (
+                        <PDFDownloadButton request={request} user={user} />
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
