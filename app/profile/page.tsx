@@ -11,12 +11,14 @@ import { fetchUserProfile, ProfileState } from "./action"
 
 export default function ProfilePage() {
   const [isClient, setIsClient] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition();
   const [state, action] = useActionState(fetchUserProfile, {
     profile: undefined,
     error: undefined,
     success: undefined
   } as ProfileState)
+
+
 
   // Ensure we're on the client side
   useEffect(() => {
@@ -51,8 +53,7 @@ export default function ProfilePage() {
           <CardContent className="pt-6 text-center">
             <p className="text-red-500 mb-4">Error: {state.error}</p>
             <form action={action}>
-              <Button type="submit" variant="outline" disabled={isPending}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button type="submit" variant="outline" loading={isPending}>
                 {isPending ? 'Loading...' : 'Try Again'}
               </Button>
             </form>
@@ -70,8 +71,7 @@ export default function ProfilePage() {
           <CardContent className="pt-6 text-center">
             <p className="text-gray-600 mb-4">Unable to load profile information.</p>
             <form action={action}>
-              <Button type="submit" variant="outline" disabled={isPending}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button type="submit" variant="outline" loading={isPending}>
                 {isPending ? 'Loading...' : 'Refresh'}
               </Button>
             </form>
@@ -181,8 +181,7 @@ export default function ProfilePage() {
             </Button>
           </Link>
           <form action={action}>
-            <Button type="submit" variant="outline" size="lg" disabled={isPending}>
-              <RefreshCw className={`h-4 w-4 mr-2`} />
+            <Button type="submit" variant="outline" size="lg" loading={isPending}>
               Refresh
             </Button>
           </form>

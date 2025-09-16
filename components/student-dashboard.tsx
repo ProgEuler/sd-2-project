@@ -30,12 +30,13 @@ export function StudentDashboard() {
     success: undefined
   } as DashboardState)
 
-  const [requestState, submitAction] = useActionState(submitPermissionRequest, {
+  const [requestState, submitAction, isPending_SubmitResponse] = useActionState(submitPermissionRequest, {
     user: undefined,
     requests: undefined,
     error: undefined,
     success: undefined
   } as DashboardState)
+
 
   // Ensure we're on the client side
   useEffect(() => {
@@ -101,8 +102,7 @@ export function StudentDashboard() {
         <CardContent className="pt-6 text-center">
           <p className="text-red-500 mb-4">Error: {state.error}</p>
           <form action={fetchAction}>
-            <Button type="submit" variant="outline" disabled={isPending}>
-              <RefreshCwIcon className="h-4 w-4 mr-2" />
+            <Button type="submit" variant="outline" loading={isPending}>
               {isPending ? 'Loading...' : 'Try Again'}
             </Button>
           </form>
@@ -160,13 +160,11 @@ export function StudentDashboard() {
           </p>
         </div>
         <div className="flex gap-4">
-          <Button onClick={() => setShowRequestForm(true)}>
-            <PlusIcon className="h-4 w-4 mr-2" />
+          <Button onClick={() => setShowRequestForm(true)} disabled={isPending}>
             New Request
           </Button>
           <form action={fetchAction}>
-            <Button type="submit" variant="outline" disabled={isPending}>
-              <RefreshCwIcon className="h-4 w-4 mr-2" />
+            <Button type="submit" variant="outline" loading={isPending}>
               Refresh
             </Button>
           </form>
@@ -264,8 +262,8 @@ export function StudentDashboard() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Submitting...' : 'Submit Request'}
+                  <Button type="submit" loading={isPending_SubmitResponse}>
+                    {isPending_SubmitResponse ? 'Submitting...' : 'Submit Request'}
                   </Button>
                   <Button
                     type="button"
@@ -289,8 +287,7 @@ export function StudentDashboard() {
               <FileTextIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No requests yet</h3>
               <p className="text-muted-foreground mb-4">Submit your first permission request to get started.</p>
-              <Button onClick={() => setShowRequestForm(true)}>
-                <PlusIcon className="h-4 w-4 mr-2" />
+              <Button onClick={() => setShowRequestForm(true)} disabled={isPending}>
                 Create Request
               </Button>
             </div>

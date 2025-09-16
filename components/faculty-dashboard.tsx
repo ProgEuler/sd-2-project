@@ -102,10 +102,9 @@ export function FacultyDashboard() {
           <CardContent className="pt-6 text-center">
             <p className="text-red-500 mb-4">Error: {state.error}</p>
             <form action={fetchAction}>
-              <Button type="submit" variant="outline" disabled={isPending}>
-                <RefreshCwIcon className="h-4 w-4 mr-2" />
-                {isPending ? 'Loading...' : 'Try Again'}
-              </Button>
+              <Button type="submit" variant="outline" loading={isPending}>
+              {isPending ? 'Loading...' : 'Try Again'}
+            </Button>
             </form>
           </CardContent>
         </Card>
@@ -167,8 +166,7 @@ export function FacultyDashboard() {
           </p>
         </div>
         <form action={fetchAction}>
-          <Button type="submit" variant="outline" disabled={isPending}>
-            <RefreshCwIcon className="h-4 w-4 mr-2" />
+          <Button type="submit" variant="outline" loading={isPending}>
             Refresh
           </Button>
         </form>
@@ -323,8 +321,7 @@ export function FacultyDashboard() {
                                       <input type="hidden" name="requestId" value={request.id} />
                                       <input type="hidden" name="action" value="approve" />
                                       <input type="hidden" name="comments" value={reviewComments} />
-                                      <Button type="submit" className="w-full" disabled={isPending}>
-                                        <ThumbsUp className="h-4 w-4 mr-2" />
+                                      <Button type="submit" className="w-full" loading={isPending}>
                                         Approve
                                       </Button>
                                     </form>
@@ -339,8 +336,7 @@ export function FacultyDashboard() {
                                       <input type="hidden" name="requestId" value={request.id} />
                                       <input type="hidden" name="action" value="reject" />
                                       <input type="hidden" name="comments" value={reviewComments} />
-                                      <Button type="submit" variant="destructive" className="w-full" disabled={isPending}>
-                                        <ThumbsDown className="h-4 w-4 mr-2" />
+                                      <Button type="submit" variant="destructive" className="w-full" loading={isPending}>
                                         Reject
                                       </Button>
                                     </form>

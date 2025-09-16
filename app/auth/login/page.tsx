@@ -13,13 +13,12 @@ import { Eye, EyeOff } from "lucide-react"
 import { login } from "@/app/auth/actions"
 import { useFormStatus } from "react-dom"
 
-// Separate component for the submit button to use useFormStatus
 function SubmitButton() {
   const { pending } = useFormStatus()
 
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Signing in..." : "Sign In"}
+    <Button type="submit" className="w-full" loading={pending}>
+      Sign In
     </Button>
   )
 }

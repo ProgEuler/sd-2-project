@@ -18,8 +18,8 @@ function SubmitButton() {
    const { pending } = useFormStatus()
 
    return (
-      <Button type="submit" className="w-full" disabled={pending}>
-         {pending ? "Creating account..." : "Create Account"}
+      <Button type="submit" className="w-full" loading={pending}>
+         Create Account
       </Button>
    )
 }
